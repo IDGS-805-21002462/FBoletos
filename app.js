@@ -1,8 +1,16 @@
 const API_URL = "https://localhost:7072/api";
 let modalCompraInstance = null;
+let intervalo = null;
+ let tiempo = 180;
+
+document.getElementById("btnCancelar").addEventListener("click", () => {
+    modalCompraInstance.hide();
+});
+
 
 document.addEventListener("DOMContentLoaded", () => {
     cargarEventos();
+
     modalCompraInstance = new bootstrap.Modal(document.getElementById('modalComprar'));
 
     document.getElementById("formComprarBoleto").addEventListener("submit", async (e) => {
@@ -23,11 +31,35 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (respuesta.ok) {
-                alert("¡Compra realizada con éxito! 🎉");
+                // Obtenemos la respuesta con los montos calculados por la API
+                const boletoGuardado = await respuesta.json();
+
+                const selectZona = document.getElementById("selectZona");
+                const nombreZonaTexto = selectZona.options[selectZona.selectedIndex].text.split('-')[0].trim();
+                const tituloEvento = document.getElementById("modalTituloEvento").textContent;
+
+                // 1. Guardar datos generales
+                localStorage.setItem('ticketNombre', boletoGuardado.compradorNombre);
+                localStorage.setItem('ticketCorreo', boletoGuardado.compradorEmail);
+                localStorage.setItem('ticketCantidad', boletoGuardado.cantidad);
+                localStorage.setItem('ticketZonaId', boletoGuardado.zonaEventoId);
+                localStorage.setItem('ticketZona', nombreZonaTexto);
+                localStorage.setItem('ticketEvento', tituloEvento);
+
+                // 2. Guardar desglose de precios calculado por la BD
+                localStorage.setItem('ticketSubtotal', (boletoGuardado.subtotal || 0).toFixed(2));
+                localStorage.setItem('ticketIVA', (boletoGuardado.iva || 0).toFixed(2));
+                localStorage.setItem('ticketTotal', (boletoGuardado.totalPagado || 0).toFixed(2));
+
+                alert("¡Compra realizada con éxito!");
                 modalCompraInstance.hide();
                 cargarEventos();
+
+                // 3. Redirigir a la pantalla del ticket
+                window.location.href = 'ticket.html';
             } else {
-                alert("Error al procesar la compra. Verifica los lugares disponibles.");
+                const error = await respuesta.json().catch(() => null);
+                alert(error?.mensaje || "Error al procesar la compra. Verifica los lugares disponibles.");
             }
         } catch (error) {
             console.error("Error:", error);
@@ -35,6 +67,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+
 
 async function cargarEventos() {
     const contenedor = document.getElementById("lista-eventos");
@@ -60,7 +94,7 @@ async function cargarEventos() {
                 zonasHtml = zonas.map(z => 
                     `<li class="list-group-item d-flex justify-content-between align-items-center">
                         ${z.nombreZona || z.NombreZona} - $${z.precio || z.Precio} 
-                        <span class="badge bg-primary rounded-pill">${z.lugaresDisponibles || z.LugaresDisponibles} disp.</span>
+                        <span class="badge bg-success rounded-pill">${z.lugaresDisponibles || z.LugaresDisponibles} disp.</span>
                     </li>`
                 ).join("");
             } else {
@@ -82,7 +116,7 @@ async function cargarEventos() {
                             </ul>
 
                             <button class="btn btn-dark mt-auto w-100" onclick='abrirModalCompra(${JSON.stringify(evento)})'>
-                                🎟️ Comprar Boletos
+                                Comprar Boletos
                             </button>
                         </div>
                     </div>
@@ -97,6 +131,7 @@ async function cargarEventos() {
     }
 }
 
+
 function abrirModalCompra(evento) {
     document.getElementById("modalTituloEvento").textContent = evento.titulo || evento.Titulo;
     document.getElementById("eventoIdCompra").value = evento.id || evento.Id;
@@ -104,13 +139,23 @@ function abrirModalCompra(evento) {
     const selectZona = document.getElementById("selectZona");
     selectZona.innerHTML = "";
 
-    const zonas = evento.zonas || evento.Zonas || [];
+    // Tomamos las zonas DIRECTO de la base de datos para tener los IDs y precios reales
+    const zonasDeLaBaseDeDatos = evento.zonas || evento.Zonas || [];
 
-    if (zonas.length > 0) {
-        zonas.forEach(z => {
+    if (zonasDeLaBaseDeDatos.length > 0) {
+        zonasDeLaBaseDeDatos.forEach(z => {
             const option = document.createElement("option");
-            option.value = z.id || z.Id;
-            option.textContent = `${z.nombreZona || z.NombreZona} - $${z.precio || z.Precio} (${z.lugaresDisponibles || z.LugaresDisponibles} disponibles)`;
+            
+            // Usamos el ID real de la BD
+            option.value = z.id || z.Id; 
+            
+            // Mostramos el nombre, precio y disponibilidad
+            const nombre = z.nombreZona || z.NombreZona;
+            const precio = z.precio || z.Precio;
+            const disp = z.lugaresDisponibles ?? z.LugaresDisponibles ?? 0;
+            
+            option.textContent = `${nombre} - $${precio} (${disp} disponibles)`;
+            
             selectZona.appendChild(option);
         });
     } else {
@@ -120,4 +165,30 @@ function abrirModalCompra(evento) {
     }
 
     modalCompraInstance.show();
+
+
+    // Si había un temporizador corriendo de antes, lo limpiamos
+    if (intervalo) clearInterval(intervalo);
+
+    intervalo = setInterval(() => {
+        const minutos = Math.floor(tiempo / 60);
+        const segundos = tiempo % 60;
+        
+        const minText = minutos.toString().padStart(2, '0');
+        const segText = segundos.toString().padStart(2, '0');
+
+        // Mostrar en el modal
+        const reloj = document.getElementById("relojTemporizador");
+        if (reloj) reloj.textContent = `${minText}:${segText}`;
+
+        tiempo--;
+
+        if (tiempo < 0) {
+            clearInterval(intervalo);
+
+            modalCompraInstance.hide();
+            alert("¡Tiempo terminado! Tu sesión ha expirado.");
+            window.location.href = 'index.html';
+        }
+    }, 1000);
 }

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu Ticket - TicketEventos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container mt-5">
+        <div class="card shadow p-4 mx-auto" style="max-width: 500px;">
+            <h2 class="text-center text-success mb-4">¡Ticket de Compra Exitoso!</h2>
+            <hr>
+            <p><strong>Evento:</strong> <span id="lblEvento"></span></p>
+            <p><strong>Nombre:</strong> <span id="lblNombre"></span></p>
+            <p><strong>Correo:</strong> <span id="lblCorreo"></span></p>
+            <p><strong>Zona:</strong> <span id="lblZona"></span></p>
+            <p><strong>Cantidad:</strong> <span id="lblCantidad"></span></p>
+            
+            <hr>
+            <!-- Desglose de Pago con IVA -->
+            <div class="bg-body-secondary p-3 rounded mb-3">
+                <p class="mb-1 d-flex justify-content-between">
+                    <span>Subtotal:</span> 
+                    <strong>$<span id="lblSubtotal">0.00</span></strong>
+                </p>
+                <p class="mb-1 d-flex justify-content-between">
+                    <span>IVA (16%):</span> 
+                    <strong>$<span id="lblIVA">0.00</span></strong>
+                </p>
+
+                <p class="mb-0 fs-5 d-flex justify-content-between text-primary border-top pt-2">
+                    <strong>Total Final:</strong> 
+                    <strong>$<span id="lblTotal">0.00</span></strong>
+                </p>
+            </div>
+
+            <!-- Imagen del código QR -->
+            <div class="text-center my-3">
+                <img id="imgQrTicket" src="" alt="Código QR del Ticket" class="img-fluid border p-2 bg-white" style="max-width: 140px;">
+            </div>
+
+            <a href="index.html" class="btn btn-primary mt-2 w-100">Aceptar</a>
+        </div>
+    </div>
+
+    <!-- Script para cargar los datos del localStorage y generar el QR -->
+    <script>
+        // 1. Recuperar valores guardados en localStorage
+        const evento = localStorage.getItem('ticketEvento') || 'N/A';
+        const nombre = localStorage.getItem('ticketNombre') || 'Desconocido';
+        const correo = localStorage.getItem('ticketCorreo') || 'N/A';
+        const zona = localStorage.getItem('ticketZona') || 'N/A';
+        const cantidad = localStorage.getItem('ticketCantidad') || '0';
+        const subtotal = localStorage.getItem('ticketSubtotal') || '0.00';
+        const iva = localStorage.getItem('ticketIVA') || '0.00';
+        const total = localStorage.getItem('ticketTotal') || '0.00';
+
+        // 2. Renderizar información en el HTML
+        document.getElementById('lblEvento').textContent = evento;
+        document.getElementById('lblNombre').textContent = nombre;
+        document.getElementById('lblCorreo').textContent = correo;
+        document.getElementById('lblZona').textContent = zona;
+        document.getElementById('lblCantidad').textContent = cantidad;
+        document.getElementById('lblSubtotal').textContent = subtotal;
+        document.getElementById('lblIVA').textContent = iva;
+        document.getElementById('lblTotal').textContent = total;
+
+        // 3. Crear el texto interno que leerá el escáner QR
+        const textoQr = `TICKET VÁLIDO\nEvento: ${evento}\nComprador: ${nombre}\nZona: ${zona}\nBoletos: ${cantidad}\nTotal Pagado: $${total}`;
+
+        // 4. Generar la imagen mediante la API pública de QR
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(textoQr)}`;
+
+        // 5. Asignarla a la etiqueta de imagen
+        const imgQr = document.getElementById('imgQrTicket');
+        if (imgQr) {
+            imgQr.src = qrUrl;
+        }
+    </script>
+</body>
+</html>

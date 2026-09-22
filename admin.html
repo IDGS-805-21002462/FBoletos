@@ -10,7 +10,9 @@
 
     <nav class="navbar navbar-dark bg-dark shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="index.html">🎟️ TicketEventos (Volver al Inicio)</a>
+            <a class="navbar-brand" href="index.html">
+                 <img src="./icons/respuesta.png" alt="Icono" width="30" height="30" class="d-inline-block align-text-top me-2">
+                    TicketEventos</a>
         </div>
     </nav>
 
@@ -22,7 +24,7 @@
                         <h3 class="card-title text-center mb-4">Crear Nuevo Evento y sus Zonas</h3>
                         
                         <form id="formCrearEvento">
-                            <h5 class="text-primary mb-3">1. Información del Evento</h5>
+                            <h5 class="text-primary mb-3">Información del Evento</h5>
                             <div class="mb-3">
                                 <label class="form-label">Título del Evento:</label>
                                 <input type="text" id="titulo" class="form-control" placeholder="Ej. Concierto de Rock" required>
@@ -44,11 +46,13 @@
 
                             <hr class="my-4">
 
-                            <h5 class="text-primary mb-3">2. Zona de Boletos (Ej. General, VIP, Preferente)</h5>
+                            <h5 class="text-primary mb-3">Zona de Boletos</h5>
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Nombre de la Zona:</label>
-                                    <input type="text" id="nombreZona" class="form-control" placeholder="Ej. VIP" required>
+                                    <select id="nombreZona" class="form-select" required>
+                                        <option value="">Selecciona una zona...</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Precio ($):</label>
@@ -67,46 +71,6 @@
             </div>
         </div>
     </div>
-
-    <script>
-        const API_URL = "https://localhost:7072/api";
-
-        document.getElementById("formCrearEvento").addEventListener("submit", async (e) => {
-            e.preventDefault();
-
-            // Estructura que coincide con tu backend (incluyendo la lista de ZonasEventos)
-            const nuevoEvento = {
-                titulo: document.getElementById("titulo").value,
-                descripcion: document.getElementById("descripcion").value,
-                fechaHora: document.getElementById("fechaHora").value,
-                lugar: document.getElementById("lugar").value,
-                zonas: [  // <-- CAMBIADO A "zonas" para que coincida con tu modelo y controlador
-                    {
-                        nombreZona: document.getElementById("nombreZona").value,
-                        precio: parseFloat(document.getElementById("precioZona").value),
-                        lugaresDisponibles: parseInt(document.getElementById("lugaresZona").value)
-                    }
-                ]
-            };
-
-            try {
-                const respuesta = await fetch(`${API_URL}/Eventos`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(nuevoEvento)
-                });
-
-                if (respuesta.ok) {
-                    alert("¡Evento y zona creados con éxito! 🎸");
-                    window.location.href = "index.html"; 
-                } else {
-                    alert("Error al guardar el evento.");
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                alert("No se pudo conectar con el servidor.");
-            }
-        });
-    </script>
+    <script src="/admin.js"></script>
 </body>
 </html>

@@ -9,17 +9,21 @@
 <body class="bg-light">
 
     <!-- Barra de navegación -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4" >
         <div class="container">
-            <a class="navbar-brand" href="index.html">🎟️ TicketEventos</a>
+            <a class="navbar-brand">
+                <img src="./icons/boleto.png" alt="Icono" width="30" height="30" class="d-inline-block align-text-top me-2">
+                TicketEventos</a>
             <div class="ms-auto">
-                <a href="admin.html" class="btn btn-outline-light btn-sm">➕ Administrar / Crear Eventos</a>
+                <a href="admin.html" class="btn btn-outline-light btn-sm">
+                    <img src="./icons/mas.png" alt="Icono" width="16" height="16" class="d-inline-block align-text-top me-2">
+                    Administrar / Crear Eventos</a>
             </div>
         </div>
     </nav>
 
     <div class="container">
-        <h1 class="text-center mb-4">🎵 Cartelera de Eventos y Conciertos</h1>
+        <h1 class="text-center mb-4">Cartelera de Eventos y Conciertos</h1>
 
         <!-- Contenedor donde se cargarán los eventos desde el Backend -->
         <div id="lista-eventos" class="row">
@@ -60,8 +64,16 @@
                             <label class="form-label">Cantidad de Boletos:</label>
                             <input type="number" id="cantidadBoletos" class="form-control" min="1" value="1" required>
                         </div>
+                        
+                       
+                        <div class="text-center my-3">
+                            <small class="text-muted">Tiempo restante para completar la compra:</small>
+                            <div id="relojTemporizador" class="fw-bold text-danger fs-5">03:00</div>
+                        </div>
 
-                        <button type="submit" class="btn btn-success w-100">Confirmar y Pagar</button>
+
+                        <button type="submit" class="btn btn-success w-100 mb-2">Confirmar y Pagar</button>
+                        <button type="button" id="btnCancelar" class="btn btn-outline-danger w-100">Cancelar</button>
                     </form>
                 </div>
             </div>
