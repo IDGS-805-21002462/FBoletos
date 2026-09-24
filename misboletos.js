@@ -47,7 +47,6 @@ function renderizarMisBoletos(boletos) {
     }
 
     boletos.forEach(boleto => {
-        // Variables directas gracias al mapeo en el backend
         const eventoTitulo = boleto.eventoTitulo || "Evento Desconocido";
         const zonaNombre = boleto.zonaNombre || "Zona";
         const totalPagado = boleto.totalPagado ?? 0;

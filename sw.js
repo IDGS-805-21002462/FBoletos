@@ -1,4 +1,4 @@
-const CACHE_ESTATICO = 'boletos-estatico-v3';
+const CACHE_ESTATICO = 'boletos';
 const CACHE_DINAMICO = 'boletos-datos-v1';
 
 const ARCHIVOS_CACHE = [
@@ -15,7 +15,10 @@ const ARCHIVOS_CACHE = [
     '/icons/billete-de-avion.png',
     '/icons/boleto.png',
     '/icons/mas.png',
-    '/icons/respuesta.png'
+    '/icons/respuesta.png',
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
+    'https://cdn.jsdelivr.net/npm/sweetalert2@11'
 ];
 
 self.addEventListener('install', evento => {
@@ -85,10 +88,21 @@ self.addEventListener('fetch', evento => {
         return; 
     }
 
-    // 2. MANEJO DE ARCHIVOS ESTÁTICOS (HTML, CSS, JS) -> CACHE FIRST
+    // 2. MANEJO DE ARCHIVOS ESTÁTICOS Y CDNs EXTERNOS -> CACHE FIRST
     evento.respondWith(
         caches.match(evento.request).then(respuestaCache => {
-            return respuestaCache || fetch(evento.request).catch(() => {
+            if (respuestaCache) {
+                return respuestaCache; // Si ya lo descargó, usa el guardado
+            }
+            
+            return fetch(evento.request).then(respuestaRed => {
+                // Guarda las nuevas imágenes o scripts que encuentre en el camino
+                const respuestaClonada = respuestaRed.clone();
+                caches.open(CACHE_ESTATICO).then(cache => {
+                    cache.put(evento.request, respuestaClonada);
+                });
+                return respuestaRed;
+            }).catch(() => {
                 return new Response("Archivo no encontrado o sin conexión a internet.", {
                     status: 404,
                     headers: { "Content-Type": "text/plain" }
