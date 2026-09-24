@@ -5,52 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Venta de Boletos para Eventos</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-light">
 
-    <!-- Barra de navegación -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4" >
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4">
         <div class="container">
             <a class="navbar-brand">
                 <img src="./icons/boleto.png" alt="Icono" width="30" height="30" class="d-inline-block align-text-top me-2">
-                TicketEventos</a>
-            <div class="ms-auto">
-                <a href="admin.html" class="btn btn-outline-light btn-sm">
-                    <img src="./icons/mas.png" alt="Icono" width="16" height="16" class="d-inline-block align-text-top me-2">
-                    Administrar / Crear Eventos</a>
+                TicketEventos
+            </a>
+            <div class="ms-auto" id="menu-usuario">
             </div>
         </div>
     </nav>
 
     <div class="container">
         <h1 class="text-center mb-4">Cartelera de Eventos y Conciertos</h1>
-            <div class="row mb-4 justify-content-center">
-                    <div class="col-md-6">
-                        <div class="input-group">
-                            <span class="input-group-text">Buscar Zona</span>
-                            <select id="filtroZonaHTML" class="form-select">
-                                <option value="">Todas las zonas</option>
-                                <option value="VIP">VIP</option>
-                                <option value="Preferente">Preferente</option>
-                                <option value="Platinium">Platinium</option>
-                                <option value="Oro">Oro</option>
-                                <option value="Plata">Plata</option>
-                                <option value="General A">General A</option>
-                                <option value="General B">General B</option>
-                                <option value="Grada / Tribuna">Grada / Tribuna</option>
-                            </select>
-                        </div>
-                    </div>
+        <div class="row mb-4 justify-content-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text">Buscar Zona</span>
+                    <select id="filtroZonaHTML" class="form-select">
+                        <option value="">Todas las zonas</option>
+                        <option value="VIP">VIP</option>
+                        <option value="Preferente">Preferente</option>
+                        <option value="Platinium">Platinium</option>
+                        <option value="Oro">Oro</option>
+                        <option value="Plata">Plata</option>
+                        <option value="General A">General A</option>
+                        <option value="General B">General B</option>
+                        <option value="Grada / Tribuna">Grada / Tribuna</option>
+                    </select>
                 </div>
+            </div>
+        </div>
 
-
-        <!-- Contenedor donde se cargarán los eventos desde el Backend -->
         <div id="lista-eventos" class="row">
-            <!-- Los eventos se inyectarán aquí con JavaScript -->
         </div>
     </div>
 
-    <!-- Modal para Comprar Boletos -->
     <div class="modal fade" id="modalComprar" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -64,12 +59,14 @@
                         
                         <div class="mb-3">
                             <label class="form-label">Tu Nombre:</label>
-                            <input type="text" id="compradorNombre" class="form-control" required>
+                            <!-- El input ahora es de solo lectura y se autocompleta con JS -->
+                            <input type="text" id="compradorNombre" class="form-control" readonly required>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Correo Electrónico:</label>
-                            <input type="email" id="compradorEmail" class="form-control" required>
+                            <!-- El input ahora es de solo lectura y se autocompleta con JS -->
+                            <input type="email" id="compradorEmail" class="form-control" readonly required>
                         </div>
 
                         <div class="mb-3">
@@ -84,12 +81,10 @@
                             <input type="number" id="cantidadBoletos" class="form-control" min="1" value="1" required>
                         </div>
                         
-                       
                         <div class="text-center my-3">
                             <small class="text-muted">Tiempo restante para completar la compra:</small>
                             <div id="relojTemporizador" class="fw-bold text-danger fs-5">03:00</div>
                         </div>
-
 
                         <button type="submit" class="btn btn-success w-100 mb-2">Confirmar y Pagar</button>
                         <button type="button" id="btnCancelar" class="btn btn-outline-danger w-100">Cancelar</button>
@@ -99,7 +94,6 @@
         </div>
     </div>
 
-    <!-- Scripts de Bootstrap y tu Lógica JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="app.js"></script>
 </body>

@@ -1,74 +1,65 @@
 const API_URL = "https://localhost:7072/api";
 let modalCompraInstance = null;
 let intervalo = null;
- let tiempo = 180;
- let listaEventosCompleta = [];
+let tiempo = 180;
+let listaEventosCompleta = [];
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(registro => console.log('Service Worker registrado.', registro.scope))
+            .catch(error => console.error('Error al registrar Service Worker:', error));
+    });
+}
 
 document.getElementById("btnCancelar").addEventListener("click", () => {
     modalCompraInstance.hide();
 });
 
-
 document.addEventListener("DOMContentLoaded", () => {
+    verificarSesion();
     cargarEventos();
 
     modalCompraInstance = new bootstrap.Modal(document.getElementById('modalComprar'));
-
-
-
-        // 2. ESCUCHADOR DEL FILTRO POR ZONA EN EL HTML
     const selectFiltro = document.getElementById("filtroZonaHTML");
+    
     if (selectFiltro) {
         selectFiltro.addEventListener("change", (e) => {
             const zonaSeleccionada = e.target.value;
 
             if (!zonaSeleccionada) {
-                // Si selecciona "Todas las zonas", mostramos todos los eventos
                 renderizarTarjetas(listaEventosCompleta);
             } else {
-                // APLICAMOS EL FILTER AQUÍ
                 const eventosFiltrados = listaEventosCompleta.filter(evento => {
                     const zonas = evento.zonas || evento.Zonas || [];
-                    // Filtramos si el evento tiene la zona seleccionada
                     return zonas.some(z => (z.nombreZona || z.NombreZona) === zonaSeleccionada);
                 });
-
                 renderizarTarjetas(eventosFiltrados);
             }
         });
     }
 
-
-
     document.getElementById("formComprarBoleto").addEventListener("submit", async (e) => {
         e.preventDefault();
 
-            const nombre = document.getElementById("compradorNombre").value;
-            const email = document.getElementById("compradorEmail").value;
-            const cantidad = document.getElementById("cantidadBoletos").value;
+        const nombre = document.getElementById("compradorNombre").value;
+        const email = document.getElementById("compradorEmail").value;
+        const cantidad = document.getElementById("cantidadBoletos").value;
+        const campos = [nombre, email, cantidad];
+        const todosLlenos = campos.every(campo => campo.trim() !== "");
 
-            // --- PUNTO 3: .every() ---
-            // Revisa si TODOS los campos tienen texto
-            const campos = [nombre, email, cantidad];
-            const todosLlenos = campos.every(campo => campo.trim() !== "");
+        if (!todosLlenos) {
+            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Por favor llena todos los campos.' });
+            return;
+        }
 
-            if (!todosLlenos) {
-                alert("Por favor llena todos los campos.");
-                return;
-            }
+        const opciones = Array.from(document.getElementById("selectZona").options);
+        const hayLugares = opciones.some(opcion => !opcion.textContent.includes("(0 disponibles)"));
 
-            // --- PUNTO 3: .some() ---
-            // Revisa si AL MENOS UNA zona tiene disponibilidad
-            const opciones = Array.from(document.getElementById("selectZona").options);
-            const hayLugares = opciones.some(opcion => !opcion.textContent.includes("(0 disponibles)"));
-
-            if (!hayLugares) {
-                alert("Esta zona ya no tiene boletos disponibles.");
-                return;
-            }
-
-
-
+        if (!hayLugares) {
+            Swal.fire({ icon: 'error', title: 'Agotado', text: 'Esta zona ya no tiene boletos disponibles.' });
+            return;
+        }
 
         const boletoData = {
             compradorNombre: document.getElementById("compradorNombre").value,
@@ -85,44 +76,41 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (respuesta.ok) {
-                // Obtenemos la respuesta con los montos calculados por la API
                 const boletoGuardado = await respuesta.json();
-
                 const selectZona = document.getElementById("selectZona");
                 const nombreZonaTexto = selectZona.options[selectZona.selectedIndex].text.split('-')[0].trim();
                 const tituloEvento = document.getElementById("modalTituloEvento").textContent;
 
-                // 1. Guardar datos generales
                 localStorage.setItem('ticketNombre', boletoGuardado.compradorNombre);
                 localStorage.setItem('ticketCorreo', boletoGuardado.compradorEmail);
                 localStorage.setItem('ticketCantidad', boletoGuardado.cantidad);
                 localStorage.setItem('ticketZonaId', boletoGuardado.zonaEventoId);
                 localStorage.setItem('ticketZona', nombreZonaTexto);
                 localStorage.setItem('ticketEvento', tituloEvento);
-
-                // 2. Guardar desglose de precios calculado por la BD
                 localStorage.setItem('ticketSubtotal', (boletoGuardado.subtotal || 0).toFixed(2));
                 localStorage.setItem('ticketIVA', (boletoGuardado.iva || 0).toFixed(2));
                 localStorage.setItem('ticketTotal', (boletoGuardado.totalPagado || 0).toFixed(2));
 
-                alert("¡Compra realizada con éxito!");
-                modalCompraInstance.hide();
-                cargarEventos();
-
-                // 3. Redirigir a la pantalla del ticket
-                window.location.href = 'ticket.html';
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: 'Compra realizada con éxito',
+                    confirmButtonText: 'Ver Ticket'
+                }).then(() => {
+                    modalCompraInstance.hide();
+                    cargarEventos();
+                    window.location.href = 'ticket.html';
+                });
             } else {
                 const error = await respuesta.json().catch(() => null);
-                alert(error?.mensaje || "Error al procesar la compra. Verifica los lugares disponibles.");
+                Swal.fire({ icon: 'error', title: 'Error', text: error?.mensaje || "Error al procesar la compra." });
             }
         } catch (error) {
             console.error("Error:", error);
-            alert("No se pudo conectar con el servidor.");
+            Swal.fire({ icon: 'error', title: 'Fallo de conexión', text: 'No se pudo conectar con el servidor.' });
         }
     });
 });
-
-
 
 async function cargarEventos() {
     const contenedor = document.getElementById("lista-eventos");
@@ -130,21 +118,21 @@ async function cargarEventos() {
 
     try {
         const respuesta = await fetch(`${API_URL}/Eventos`);
-        if (!respuesta.ok) throw new Error("No se pudo conectar con el servidor backend");
+        
+        if (!respuesta.ok) {
+            const error = await respuesta.json().catch(() => ({}));
+            throw new Error(error.mensaje || "Error al cargar los eventos desde el servidor.");
+        }
 
-        // Guardamos los datos en la variable global para usar el .filter()
         listaEventosCompleta = await respuesta.json();
-
-        // Renderizamos las tarjetas
         renderizarTarjetas(listaEventosCompleta);
 
     } catch (error) {
         console.error(error);
-        contenedor.innerHTML = `<div class="alert alert-danger text-center">Error al cargar los eventos.</div>`;
+        contenedor.innerHTML = `<div class="alert alert-danger text-center">${error.message}</div>`;
     }
 }
 
-// Función auxiliar para dibujar las tarjetas en el HTML
 function renderizarTarjetas(eventos) {
     const contenedor = document.getElementById("lista-eventos");
     contenedor.innerHTML = ""; 
@@ -156,8 +144,8 @@ function renderizarTarjetas(eventos) {
 
     eventos.forEach(evento => {
         const zonas = evento.zonas || evento.Zonas || [];
-
         let zonasHtml = "";
+        
         if (zonas.length > 0) {
             zonasHtml = zonas.map(z => 
                 `<li class="list-group-item d-flex justify-content-between align-items-center">
@@ -194,34 +182,50 @@ function renderizarTarjetas(eventos) {
     });
 }
 
+// Extrae el correo real guardado dentro del JWT
+function obtenerCorreoDelToken() {
+    const token = localStorage.getItem("jwtToken");
+    if (!token) return "";
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.email || payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] || "";
+    } catch (e) {
+        return "";
+    }
+}
 
 function abrirModalCompra(evento) {
-    // --- DESESTRUCTURACIÓN DE OBJETOS ---
-    // Extraemos titulo, id y zonas directamente del objeto evento
-    const { titulo, id, zonas = [] } = evento;
+    const token = localStorage.getItem("jwtToken");
+    if (!token) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Inicio de sesión requerido',
+            text: 'Necesitas iniciar sesión para comprar boletos.'
+        }).then(() => {
+            window.location.href = "login.html";
+        });
+        return; 
+    }
 
-    // Asignamos los datos desestructurados a la interfaz
+    const { titulo, id, zonas = [] } = evento;
     document.getElementById("modalTituloEvento").textContent = titulo || evento.Titulo;
     document.getElementById("eventoIdCompra").value = id || evento.Id;
+
+    // Autocompletar datos del usuario activo
+    document.getElementById("compradorNombre").value = localStorage.getItem("nombreUsuario") || "";
+    document.getElementById("compradorEmail").value = obtenerCorreoDelToken();
 
     const selectZona = document.getElementById("selectZona");
     selectZona.innerHTML = "";
 
     const listaZonas = zonas.length > 0 ? zonas : (evento.Zonas || []);
-
-    // --- PUNTO 4: .reduce() ---
     const totalLugares = listaZonas.reduce((acumulado, zona) => {
         const lugares = zona.lugaresDisponibles || zona.LugaresDisponibles || 0;
         return acumulado + lugares;
     }, 0);
 
-    console.log(`Total de boletos disponibles: ${totalLugares}`);
-
-    // Llenar las opciones del select usando desestructuración en el bucle
     listaZonas.forEach(zona => {
-        // --- DESESTRUCTURACIÓN DE CADA ZONA ---
         const { id: idZona, nombreZona, precio, lugaresDisponibles } = zona;
-
         const idFinal = idZona || zona.Id;
         const nombreFinal = nombreZona || zona.NombreZona;
         const precioFinal = precio || zona.Precio;
@@ -238,12 +242,10 @@ function abrirModalCompra(evento) {
         selectZona.appendChild(option);
     });
 
-    // Abrir el modal
     modalCompraInstance.show();
 
-
-    // Si había un temporizador corriendo de antes, lo limpiamos
     if (intervalo) clearInterval(intervalo);
+    tiempo = 180; // Reinicia el temporizador a 3 minutos
 
     intervalo = setInterval(() => {
         const minutos = Math.floor(tiempo / 60);
@@ -252,7 +254,6 @@ function abrirModalCompra(evento) {
         const minText = minutos.toString().padStart(2, '0');
         const segText = segundos.toString().padStart(2, '0');
 
-        // Mostrar en el modal
         const reloj = document.getElementById("relojTemporizador");
         if (reloj) reloj.textContent = `${minText}:${segText}`;
 
@@ -260,10 +261,40 @@ function abrirModalCompra(evento) {
 
         if (tiempo < 0) {
             clearInterval(intervalo);
-
             modalCompraInstance.hide();
-            alert("¡Tiempo terminado! Tu sesión ha expirado.");
-            window.location.href = 'index.html';
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tiempo Agotado',
+                text: 'Tu sesión de compra ha expirado.'
+            }).then(() => {
+                window.location.reload();
+            });
         }
     }, 1000);
 }
+
+function verificarSesion() {
+    const token = localStorage.getItem("jwtToken");
+    const nombre = localStorage.getItem("nombreUsuario");
+    const menuUsuario = document.getElementById("menu-usuario");
+
+    if (menuUsuario) {
+        if (token) {
+            menuUsuario.innerHTML = `
+                <span class="text-white me-3">Hola, <strong>${nombre}</strong></span>
+                <a href="misboletos.html" class="btn btn-outline-info btn-sm me-2">🎟️ Mis Boletos</a>
+                <button onclick="cerrarSesion()" class="btn btn-danger btn-sm">Cerrar Sesión</button>
+            `;
+        } else {
+            menuUsuario.innerHTML = `
+                <a href="login.html" class="btn btn-primary btn-sm">Iniciar Sesión / Registro</a>
+            `;
+        }
+    }
+}
+
+window.cerrarSesion = function() {
+    localStorage.removeItem("jwtToken");
+    localStorage.removeItem("nombreUsuario");
+    window.location.href = "login.html"; 
+};
