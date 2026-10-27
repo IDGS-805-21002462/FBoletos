@@ -245,7 +245,7 @@ function abrirModalCompra(evento) {
     modalCompraInstance.show();
 
     if (intervalo) clearInterval(intervalo);
-    tiempo = 180; // Reinicia el temporizador a 3 minutos
+    tiempo = 20;
 
     intervalo = setInterval(() => {
         const minutos = Math.floor(tiempo / 60);
